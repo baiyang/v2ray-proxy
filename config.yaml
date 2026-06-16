@@ -1,0 +1,50 @@
+ldap:
+  server_uri: "${LDAP_SERVER_URI:-ldap://devops.matlas.cn:389}"
+  bind_dn: "${LDAP_BIND_DN:-cn=admin,dc=idatatlas,dc=com}"
+  bind_password: "${LDAP_BIND_PASSWORD:-change-me}"
+  user_ou: "${LDAP_USER_OU:-dc=idatatlas,dc=com}"
+  user_filter: "${LDAP_USER_FILTER:-(cn=%(user)s)}"
+  attributes:
+    username: "cn"
+    name: "sn"
+    email: "mail"
+  connect_timeout_seconds: 5
+
+database:
+  path: "${DATABASE_PATH:-/data/users.db}"
+
+v2ray:
+  binary: "/usr/bin/v2ray"
+  process_name: "v2ray"
+  config_path: "${V2RAY_CONFIG_PATH:-/etc/v2ray/config.json}"
+  listen: "${V2RAY_LISTEN:-0.0.0.0}"
+  port: 10086
+  protocol: "vless"
+  network: "tcp"
+  security: "none"
+  flow: ""
+  alter_id: 0
+
+subscription:
+  listen: "0.0.0.0"
+  port: 8080
+  public_base_url: "${SUB_PUBLIC_BASE_URL:-auto}"
+  public_host: "${SUB_PUBLIC_HOST:-auto}"
+  public_port: 10086
+  scheme: "${SUB_PUBLIC_SCHEME:-auto}"
+  node_name: "${SUB_NODE_NAME:-enterprise-vless}"
+  secret_key: "${SUB_SECRET_KEY:-change-me-in-production}"
+  token_ttl_seconds: 0
+  workers: 2
+  threads: 4
+  routing:
+    mode: "cn_direct"
+    custom_rules: []
+
+admin:
+  username: "${ADMIN_USERNAME:-admin2}"
+  password: "${ADMIN_PASSWORD:-Mdt123456!}"
+
+sync:
+  lock_path: "/tmp/v2ray-proxy-ldap-sync.lock"
+  cron: "*/5 * * * *"

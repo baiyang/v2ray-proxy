@@ -1,0 +1,24 @@
+services:
+  v2ray-proxy:
+    build: .
+    image: enterprise-v2ray-proxy:latest
+    container_name: enterprise-v2ray-proxy
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "10086:10086"
+    volumes:
+      - ./data:/data
+      - ./runtime/v2ray:/etc/v2ray
+      - ./config.yaml:/app/config.yaml:ro
+    environment:
+      APP_CONFIG_PATH: /app/config.yaml
+      LDAP_SERVER_URI: ldap://172.28.0.9:389
+      LDAP_BIND_DN: cn=admin,dc=idatatlas,dc=com
+      LDAP_BIND_PASSWORD: CdtnhbdLJ4vrCCyHT/gHM/gf27QNfr3hL+TfgTfPLHs=
+      LDAP_USER_OU: dc=idatatlas,dc=com
+      LDAP_USER_FILTER: (cn=%(user)s)
+      DATABASE_PATH: /data/users.db
+      V2RAY_CONFIG_PATH: /etc/v2ray/config.json
+      SUB_NODE_NAME: enterprise-vless
+      SUB_SECRET_KEY: change-me-in-production

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>企业代理订阅</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <strong>企业代理订阅</strong>
+  <a class="link" href="{{ url_for('logout') }}">退出</a>
+</header>
+<main class="dashboard">
+  <section class="panel">
+    <h1>{{ user_id }}</h1>
+    {% if subscription %}
+      <p class="muted">订阅地址</p>
+      <code>{{ subscription.url }}</code>
+      <div class="row">
+        <a class="button" href="{{ subscription.url }}">下载 Clash 配置</a>
+      </div>
+      <p class="muted">Clash MI 扫码导入</p>
+      <img class="qr" src="{{ subscription.qr }}" alt="订阅二维码">
+      <p class="muted">VLESS 地址</p>
+      <code>{{ subscription.vless }}</code>
+    {% else %}
+      <p>点击按钮后会创建你的 VLESS UUID，并把节点写入服务端配置。</p>
+      <form method="post" action="{{ url_for('create_subscription') }}">
+        <button type="submit">生成订阅 URL 和二维码</button>
+      </form>
+    {% endif %}
+  </section>
+</main>
+</body>
+</html>

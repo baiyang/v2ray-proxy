@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>企业代理订阅</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body class="login-page">
+<main class="login-panel">
+  <h1>企业代理订阅</h1>
+  {% with messages = get_flashed_messages() %}
+    {% for message in messages %}<div class="error">{{ message }}</div>{% endfor %}
+  {% endwith %}
+  <form method="post" action="{{ url_for('login') }}">
+    <label for="username">LDAP 用户名</label>
+    <input id="username" name="username" autocomplete="username" required>
+    <label for="password">密码</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required>
+    <div class="actions"><button type="submit">登录</button></div>
+  </form>
+</main>
+</body>
+</html>

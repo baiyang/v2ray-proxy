@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>代理用户管理</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <strong>代理用户管理</strong>
+  <a class="link" href="{{ url_for('admin_logout') }}">退出</a>
+</header>
+<main class="admin-layout">
+  <section class="panel">
+    <h1>新建本地用户</h1>
+    {% with messages = get_flashed_messages() %}
+      {% for message in messages %}<div class="error">{{ message }}</div>{% endfor %}
+    {% endwith %}
+    <form class="inline-form" method="post" action="{{ url_for('admin_create_user') }}">
+      <label for="user_id">用户名</label>
+      <input id="user_id" name="user_id" required>
+      <label for="display_name">显示名</label>
+      <input id="display_name" name="display_name">
+      <label for="email">邮箱</label>
+      <input id="email" name="email" type="email">
+      <button type="submit">创建并生成订阅</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h1>已绑定用户</h1>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>用户名</th>
+            <th>显示名</th>
+            <th>来源</th>
+            <th>状态</th>
+            <th>绑定时间</th>
+            <th>订阅</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in users %}
+            <tr>
+              <td>{{ row.user.ldap_user_id }}</td>
+              <td>{{ row.user.display_name or "-" }}</td>
+              <td>{{ "LDAP" if row.user.is_ldap else "本地" }}</td>
+              <td><span class="status {{ row.user.status }}">{{ row.user.status }}</span></td>
+              <td>{{ row.user.bound_at or "-" }}</td>
+              <td>
+                {% if row.subscription %}
+                  <details>
+                    <summary>查看</summary>
+                    <p class="muted">订阅 URL</p>
+                    <code>{{ row.subscription.url }}</code>
+                    <p class="muted">二维码</p>
+                    <img class="qr small" src="{{ row.subscription.qr }}" alt="订阅二维码">
+                  </details>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td>
+                {% if row.user.status == "active" %}
+                  <form method="post" action="{{ url_for('admin_revoke_user', user_id=row.user.ldap_user_id) }}">
+                    <button class="danger" type="submit">取消权限</button>
+                  </form>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="7">暂无用户</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+</body>
+</html>
