@@ -6,9 +6,12 @@ from app.config import get_config
 
 
 def main() -> int:
-    cron = get_config().sync.cron
+    config = get_config()
+    lines = [
+        f"{config.sync.cron} cd /app && /usr/bin/python -m app.sync_ldap",
+    ]
     Path("/etc/crontabs/root").write_text(
-        f"{cron} cd /app && /usr/bin/python -m app.sync_ldap\n",
+        "\n".join(lines) + "\n",
         encoding="utf-8",
     )
     return 0

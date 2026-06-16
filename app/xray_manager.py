@@ -16,10 +16,11 @@ logger = logging.getLogger(__name__)
 
 def build_v2ray_config(config: V2RayConfig | None = None) -> dict[str, object]:
     runtime = config or get_config().v2ray
+    traffic = get_config().traffic
     clients = [
         {
             "id": user.uuid,
-            "email": user.email or user.ldap_user_id,
+            "email": user.ldap_user_id,
             **({"flow": runtime.flow} if runtime.flow else {}),
         }
         for user in db.list_active_users()
@@ -45,10 +46,54 @@ def build_v2ray_config(config: V2RayConfig | None = None) -> dict[str, object]:
                     "security": runtime.security,
                 },
             }
-        ],
+        ] + (
+            [
+                {
+                    "tag": "api",
+                    "listen": traffic.api_host,
+                    "port": traffic.api_port,
+                    "protocol": "dokodemo-door",
+                    "settings": {
+                        "address": traffic.api_host,
+                    },
+                }
+            ]
+            if traffic.enabled
+            else []
+        ),
+        "stats": {} if traffic.enabled else None,
+        "api": {
+            "tag": "api",
+            "services": [
+                "StatsService",
+            ],
+        } if traffic.enabled else None,
+        "policy": {
+            "levels": {
+                "0": {
+                    "statsUserUplink": True,
+                    "statsUserDownlink": True,
+                }
+            }
+        } if traffic.enabled else None,
+        "routing": {
+            "rules": [
+                {
+                    "type": "field",
+                    "inboundTag": [
+                        "api",
+                    ],
+                    "outboundTag": "api",
+                }
+            ]
+        } if traffic.enabled else None,
         "outbounds": [
             {
                 "tag": "direct",
+                "protocol": "freedom",
+            },
+            {
+                "tag": "api",
                 "protocol": "freedom",
             },
             {
@@ -62,7 +107,7 @@ def build_v2ray_config(config: V2RayConfig | None = None) -> dict[str, object]:
 def write_v2ray_config(payload: dict[str, object], path: Path | None = None) -> None:
     target = path or get_config().v2ray.config_path
     target.parent.mkdir(parents=True, exist_ok=True)
-    serialized = json.dumps(payload, indent=2, sort_keys=False)
+    serialized = json.dumps(_drop_none(payload), indent=2, sort_keys=False)
 
     with NamedTemporaryFile("w", encoding="utf-8", dir=target.parent, delete=False) as handle:
         handle.write(serialized)
@@ -127,3 +172,11 @@ def restart_v2ray() -> None:
     stderr = result.stderr.strip()
     logger.error("v2ray_restart process=%s result=failed stderr=%s", process_name, stderr)
     raise RuntimeError(f"Failed to restart {process_name}: {stderr}")
+
+
+def _drop_none(value: object) -> object:
+    if isinstance(value, dict):
+        return {key: _drop_none(child) for key, child in value.items() if child is not None}
+    if isinstance(value, list):
+        return [_drop_none(child) for child in value]
+    return value

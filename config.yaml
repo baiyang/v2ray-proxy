@@ -45,6 +45,14 @@ admin:
   username: "${ADMIN_USERNAME:-admin2}"
   password: "${ADMIN_PASSWORD:-Mdt123456!}"
 
+traffic:
+  enabled: true
+  interval_seconds: 5
+  timezone: "Asia/Shanghai"
+  default_daily_limit_gb: 20
+  api_host: "127.0.0.1"
+  api_port: 10085
+
 sync:
   lock_path: "/tmp/v2ray-proxy-ldap-sync.lock"
   cron: "*/5 * * * *"

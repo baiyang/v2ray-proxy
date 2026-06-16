@@ -106,6 +106,17 @@ class AdminConfig:
 
 
 @dataclass(frozen=True)
+class TrafficConfig:
+    enabled: bool
+    interval_seconds: int
+    timezone: str
+    default_daily_limit_gb: float
+    default_daily_limit_bytes: int
+    api_host: str
+    api_port: int
+
+
+@dataclass(frozen=True)
 class SyncConfig:
     lock_path: Path
     cron: str
@@ -118,6 +129,7 @@ class AppConfig:
     v2ray: V2RayConfig
     subscription: SubscriptionConfig
     admin: AdminConfig
+    traffic: TrafficConfig
     sync: SyncConfig
 
 
@@ -156,7 +168,9 @@ def get_config() -> AppConfig:
     if not isinstance(custom_rules, list):
         raise ConfigError("subscription.routing.custom_rules must be a list")
     admin = raw.get("admin") or {}
+    traffic = raw.get("traffic") or {}
     sync = raw.get("sync") or {}
+    default_daily_limit_gb = float(traffic.get("default_daily_limit_gb", 20))
 
     return AppConfig(
         ldap=LdapConfig(
@@ -203,6 +217,15 @@ def get_config() -> AppConfig:
         admin=AdminConfig(
             username=str(admin.get("username", "admin2")),
             password=str(admin.get("password", "Mdt123456!")),
+        ),
+        traffic=TrafficConfig(
+            enabled=_bool(traffic.get("enabled", True)),
+            interval_seconds=int(traffic.get("interval_seconds", 5)),
+            timezone=str(traffic.get("timezone", "Asia/Shanghai")),
+            default_daily_limit_gb=default_daily_limit_gb,
+            default_daily_limit_bytes=int(default_daily_limit_gb * 1024 * 1024 * 1024),
+            api_host=str(traffic.get("api_host", "127.0.0.1")),
+            api_port=int(traffic.get("api_port", 10085)),
         ),
         sync=SyncConfig(
             lock_path=Path(str(sync.get("lock_path", "/tmp/v2ray-proxy-ldap-sync.lock"))),

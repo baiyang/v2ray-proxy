@@ -45,7 +45,7 @@ def run() -> int:
             logger.info("ldap_sync_user user=%s result=active", user.ldap_user_id)
             continue
 
-        db.revoke_user(user.ldap_user_id)
+        db.revoke_user(user.ldap_user_id, reason=db.REVOKED_LDAP_MISSING)
         revoked += 1
         logger.info("ldap_sync_user user=%s result=revoked", user.ldap_user_id)
 

@@ -39,6 +39,8 @@
             <th>来源</th>
             <th>状态</th>
             <th>绑定时间</th>
+            <th>今日流量</th>
+            <th>每日额度</th>
             <th>订阅</th>
             <th>操作</th>
           </tr>
@@ -51,6 +53,12 @@
               <td>{{ "LDAP" if row.user.is_ldap else "本地" }}</td>
               <td><span class="status {{ row.user.status }}">{{ row.user.status }}</span></td>
               <td>{{ row.user.bound_at or "-" }}</td>
+              <td>
+                <div>上行 {{ row.traffic.uplink }}</div>
+                <div>下行 {{ row.traffic.downlink }}</div>
+                <div class="progress mini"><span style="width: {{ row.traffic.percent }}%"></span></div>
+              </td>
+              <td>{{ row.traffic.limit }}</td>
               <td>
                 {% if row.subscription %}
                   <details>
@@ -65,6 +73,7 @@
                 {% endif %}
               </td>
               <td>
+                <a class="link" href="{{ url_for('admin_user_detail', user_id=row.user.ldap_user_id) }}">详情</a>
                 {% if row.user.status == "active" %}
                   <form method="post" action="{{ url_for('admin_revoke_user', user_id=row.user.ldap_user_id) }}">
                     <button class="danger" type="submit">取消权限</button>
@@ -75,7 +84,7 @@
               </td>
             </tr>
           {% else %}
-            <tr><td colspan="7">暂无用户</td></tr>
+            <tr><td colspan="9">暂无用户</td></tr>
           {% endfor %}
         </tbody>
       </table>

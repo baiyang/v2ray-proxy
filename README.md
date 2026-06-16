@@ -75,6 +75,34 @@ subscription:
       - "MATCH,Proxy"
 ```
 
+流量统计和每日额度配置：
+
+```yaml
+traffic:
+  enabled: true
+  interval_seconds: 5
+  timezone: "Asia/Shanghai"
+  default_daily_limit_gb: 20
+  api_host: "127.0.0.1"
+  api_port: 10085
+```
+
+统计按用户名计算，V2Ray client 的 `email` 固定写入用户名，不依赖邮箱字段。系统会通过 V2Ray Stats API 定时采集每个用户的上行和下行流量，按自然日写入 SQLite。采集器由 supervisord 常驻管理，默认每 5 秒采集一次。
+
+额度逻辑：
+
+- 默认每日总流量额度是 `20GB`
+- 管理员后台可以为每个用户单独设置每日额度
+- 当日上行 + 下行合计超过额度后，用户会被临时 `revoked`
+- 超额撤销会在 `traffic.timezone` 对应时区的次日 `00:00` 后自动恢复
+- 管理员手动撤销和 LDAP 离职撤销不会自动恢复
+
+管理员后台支持查看：
+
+- 用户当日上行、下行、合计和额度使用率
+- 最近 30 日每日上行/下行图表
+- 最近 30 日每日流量明细
+
 ## 持久化目录
 
 `docker-compose.yml` 默认挂载：
@@ -90,6 +118,7 @@ subscription:
 - `v2ray`: `/usr/bin/v2ray run -c /etc/v2ray/config.json`
 - `subscription`: Flask 订阅服务
 - `cron`: 每 5 分钟执行一次 LDAP active 用户清理
+- `traffic`: 每 5 秒采集一次用户流量
 
 ## 离职清理
 

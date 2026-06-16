@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from functools import wraps
 from typing import Callable, TypeVar
+from zoneinfo import ZoneInfo
 
 from flask import (
     Flask,
@@ -101,14 +103,64 @@ def create_app() -> Flask:
     @admin_required
     def admin_dashboard() -> str:
         endpoint = resolve_public_endpoint(request.headers, request.scheme, request.host)
+        today = current_traffic_day()
         users = [
             {
                 "user": user,
                 "subscription": subscription_payload(user, endpoint) if user.status == db.ACTIVE and user.uuid else None,
+                "traffic": traffic_summary(user, today),
             }
             for user in db.list_users()
         ]
         return render_template("admin_dashboard.html", users=users)
+
+    @app.get("/admin/users/<path:user_id>")
+    @admin_required
+    def admin_user_detail(user_id: str) -> Response | str:
+        user = db.get_user(user_id)
+        if user is None:
+            return Response("user not found\n", status=404, mimetype="text/plain")
+        endpoint = resolve_public_endpoint(request.headers, request.scheme, request.host)
+        today = current_traffic_day()
+        history = db.list_daily_traffic(user_id, datetime.fromisoformat(today).date(), 30)
+        max_total = max((row.uplink_bytes + row.downlink_bytes for row in history), default=0)
+        return render_template(
+            "admin_user_detail.html",
+            user=user,
+            subscription=subscription_payload(user, endpoint) if user.status == db.ACTIVE and user.uuid else None,
+            traffic=traffic_summary(user, today),
+            history=[
+                {
+                    "day": row.day,
+                    "uplink": row.uplink_bytes,
+                    "downlink": row.downlink_bytes,
+                    "uplink_label": format_bytes(row.uplink_bytes),
+                    "downlink_label": format_bytes(row.downlink_bytes),
+                    "total": row.uplink_bytes + row.downlink_bytes,
+                    "total_label": format_bytes(row.uplink_bytes + row.downlink_bytes),
+                    "uplink_height": chart_height(row.uplink_bytes, max_total),
+                    "downlink_height": chart_height(row.downlink_bytes, max_total),
+                }
+                for row in history
+            ],
+        )
+
+    @app.post("/admin/users/<path:user_id>/quota")
+    @admin_required
+    def admin_update_quota(user_id: str) -> Response:
+        limit_gb = request.form.get("daily_limit_gb", "").strip()
+        try:
+            limit_bytes = int(float(limit_gb) * 1024 * 1024 * 1024)
+        except ValueError:
+            flash("每日额度必须是数字")
+            return redirect(url_for("admin_user_detail", user_id=user_id))
+        if limit_bytes <= 0:
+            flash("每日额度必须大于 0")
+            return redirect(url_for("admin_user_detail", user_id=user_id))
+
+        db.set_daily_traffic_limit(user_id, limit_bytes)
+        logger.info("admin_quota_update user=%s limit_bytes=%s", user_id, limit_bytes)
+        return redirect(url_for("admin_user_detail", user_id=user_id))
 
     @app.post("/admin/users")
     @admin_required
@@ -125,6 +177,7 @@ def create_app() -> Flask:
             display_name=display_name,
             email=email,
             is_ldap=False,
+            force_reactivate=True,
         )
         sync_v2ray_config(reload_process=True)
         logger.info("admin_user_create user=%s uuid=%s", user.ldap_user_id, user.uuid)
@@ -204,6 +257,48 @@ def subscription_payload(user: db.UserRecord, endpoint: PublicEndpoint) -> dict[
         "qr": qrcode_data_uri(url),
         "vless": vless_uri(user, endpoint),
     }
+
+
+def current_traffic_day() -> str:
+    tz = ZoneInfo(get_config().traffic.timezone)
+    return datetime.now(tz).date().isoformat()
+
+
+def traffic_summary(user: db.UserRecord, day: str) -> dict[str, object]:
+    daily = db.get_daily_traffic(user.ldap_user_id, day)
+    limit = user.daily_traffic_limit_bytes or get_config().traffic.default_daily_limit_bytes
+    total_bytes = daily.uplink_bytes + daily.downlink_bytes
+    percent = min(100, round((total_bytes / limit) * 100, 1)) if limit else 0
+    return {
+        "day": day,
+        "uplink_bytes": daily.uplink_bytes,
+        "downlink_bytes": daily.downlink_bytes,
+        "total_bytes": total_bytes,
+        "uplink": format_bytes(daily.uplink_bytes),
+        "downlink": format_bytes(daily.downlink_bytes),
+        "total": format_bytes(total_bytes),
+        "limit_bytes": limit,
+        "limit_gb": round(limit / 1024 / 1024 / 1024, 2),
+        "limit": format_bytes(limit),
+        "percent": percent,
+    }
+
+
+def format_bytes(value: int) -> str:
+    units = ["B", "KB", "MB", "GB", "TB"]
+    amount = float(value)
+    for unit in units:
+        if amount < 1024 or unit == units[-1]:
+            if unit == "B":
+                return f"{int(amount)} {unit}"
+            return f"{amount:.2f} {unit}"
+        amount /= 1024
+
+
+def chart_height(value: int, max_value: int) -> int:
+    if max_value <= 0 or value <= 0:
+        return 2
+    return max(2, round((value / max_value) * 180))
 
 
 if __name__ == "__main__":

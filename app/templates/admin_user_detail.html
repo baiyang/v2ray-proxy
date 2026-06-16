@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ user.ldap_user_id }} 流量详情</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <strong>{{ user.ldap_user_id }} 流量详情</strong>
+  <a class="link" href="{{ url_for('admin_dashboard') }}">返回</a>
+</header>
+<main class="admin-layout">
+  <section class="panel">
+    <h1>{{ user.ldap_user_id }}</h1>
+    {% with messages = get_flashed_messages() %}
+      {% for message in messages %}<div class="error">{{ message }}</div>{% endfor %}
+    {% endwith %}
+    <div class="metrics">
+      <div><span>今日上行</span><strong>{{ traffic.uplink }}</strong></div>
+      <div><span>今日下行</span><strong>{{ traffic.downlink }}</strong></div>
+      <div><span>今日合计</span><strong>{{ traffic.total }}</strong></div>
+      <div><span>每日额度</span><strong>{{ traffic.limit }}</strong></div>
+      <div><span>使用率</span><strong>{{ traffic.percent }}%</strong></div>
+    </div>
+    <div class="progress"><span style="width: {{ traffic.percent }}%"></span></div>
+    <form class="quota-form" method="post" action="{{ url_for('admin_update_quota', user_id=user.ldap_user_id) }}">
+      <label for="daily_limit_gb">每日总额度 GB</label>
+      <input id="daily_limit_gb" name="daily_limit_gb" type="number" min="0.1" step="0.1" value="{{ traffic.limit_gb }}" required>
+      <button type="submit">保存额度</button>
+    </form>
+  </section>
+
+  {% if subscription %}
+    <section class="panel">
+      <h1>订阅</h1>
+      <p class="muted">订阅 URL</p>
+      <code>{{ subscription.url }}</code>
+      <p class="muted">二维码</p>
+      <img class="qr small" src="{{ subscription.qr }}" alt="订阅二维码">
+    </section>
+  {% endif %}
+
+  <section class="panel">
+    <h1>最近 30 日流量</h1>
+    <div class="chart">
+      {% for row in history %}
+        <div class="chart-day" title="{{ row.day }} 上行 {{ row.uplink_label }} 下行 {{ row.downlink_label }}">
+          <div class="bars">
+            <span class="bar up" style="height: {{ row.uplink_height }}px"></span>
+            <span class="bar down" style="height: {{ row.downlink_height }}px"></span>
+          </div>
+          <small>{{ row.day[5:] }}</small>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="legend">
+      <span><i class="up"></i>上行</span>
+      <span><i class="down"></i>下行</span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h1>每日明细</h1>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>日期</th>
+            <th>上行</th>
+            <th>下行</th>
+            <th>合计</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in history|reverse %}
+            <tr>
+              <td>{{ row.day }}</td>
+              <td>{{ row.uplink_label }}</td>
+              <td>{{ row.downlink_label }}</td>
+              <td>{{ row.total_label }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+</body>
+</html>

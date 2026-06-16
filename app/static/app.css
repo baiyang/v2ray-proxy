@@ -213,8 +213,127 @@ button.danger {
   background: #b91c1c;
 }
 
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.metrics div {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.metrics span {
+  display: block;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.metrics strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 20px;
+}
+
+.progress {
+  height: 10px;
+  overflow: hidden;
+  background: #e2e8f0;
+  border-radius: 999px;
+}
+
+.progress span {
+  display: block;
+  height: 100%;
+  max-width: 100%;
+  background: #0f766e;
+}
+
+.progress.mini {
+  width: 120px;
+  height: 6px;
+  margin-top: 8px;
+}
+
+.quota-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 260px) auto;
+  align-items: end;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.chart {
+  display: grid;
+  grid-template-columns: repeat(30, minmax(24px, 1fr));
+  gap: 8px;
+  align-items: end;
+  min-height: 230px;
+}
+
+.chart-day {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+}
+
+.bars {
+  height: 190px;
+  display: flex;
+  align-items: end;
+  gap: 3px;
+}
+
+.bar {
+  width: 8px;
+  border-radius: 4px 4px 0 0;
+}
+
+.bar.up,
+.legend .up {
+  background: #0f766e;
+}
+
+.bar.down,
+.legend .down {
+  background: #2563eb;
+}
+
+.chart-day small {
+  writing-mode: vertical-rl;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.legend {
+  display: flex;
+  gap: 18px;
+  margin-top: 14px;
+  color: #475569;
+}
+
+.legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  margin-right: 6px;
+}
+
 @media (max-width: 820px) {
   .inline-form {
     grid-template-columns: 1fr;
+  }
+
+  .metrics,
+  .quota-form {
+    grid-template-columns: 1fr;
+  }
+
+  .chart {
+    overflow-x: auto;
   }
 }

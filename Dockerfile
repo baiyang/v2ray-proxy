@@ -7,7 +7,8 @@ RUN apk add --no-cache \
     py3-pip \
     python3 \
     sqlite \
-    supervisor
+    supervisor \
+    tzdata
 
 WORKDIR /app
 
